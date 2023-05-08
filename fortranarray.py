@@ -3,9 +3,12 @@ This module contains a function that obtains a NumPy array
 and writes a Fortran code for an equivalent array.
 '''
 
-import numpy as np
-
 def write_fortran_array(array, outfile):
-    # Get the shape of the array
-    print("Shape of the array:")
-    print(array.shape)
+    # open the output file
+    with open(outfile, "w", encoding="utf8") as f:
+        for i in range(array.shape[1]):
+            if i == 0:
+                continue
+            for j in range(array.shape[0]):
+                print(f"gmunu({j+1},{i}) = {array[j,i]:.8f}", file=f)
+    f.close()

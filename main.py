@@ -115,7 +115,7 @@ if args.verbose:
 
 onecxcints = np.zeros((5, 87))
 
-for i in range(1, 7):
+for i in range(1, 10):
     print("Running for element", "'", pesdict[i], "'")
 
     # print current directory

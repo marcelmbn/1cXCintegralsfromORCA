@@ -99,13 +99,13 @@ def modtwoelints(twoelints,ati,verb):
     if msindo_xc_ints[1] <= 1e-7:
         msindo_xc_ints[1] = twoelints[1, 2, 1, 2]
     print(f"p <-> p': {msindo_xc_ints[1]:.6f}")
-    # 1c-XC integral between s and d functions
-    msindo_xc_ints[2] = twoelints[6, 0, 6, 0]
-    if msindo_xc_ints[2] <= 1e-7:
-        msindo_xc_ints[2] = twoelints[0, 6, 0, 6]
-    print(f"p <-> d : {msindo_xc_ints[2]:.6f}")
 
     if ati > 2:
+        # 1c-XC integral between s and d functions
+        msindo_xc_ints[2] = twoelints[6, 0, 6, 0]
+        if msindo_xc_ints[2] <= 1e-7:
+            msindo_xc_ints[2] = twoelints[0, 6, 0, 6]
+        print(f"p <-> d : {msindo_xc_ints[2]:.6f}")
         # 1c-XC integral between p and d functions
         pydxy = twoelints[2, 6, 2, 6]
         if pydxy <= 1e-7:
