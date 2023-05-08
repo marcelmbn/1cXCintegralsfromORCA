@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+'''
+This script runs qvSZP for all elements in the periodic table,
+exports the 2-el integrals from ORCA,
+sorts and averages them,
+and writes them into a file in the format required by GP3.
+'''
 
 # Python script for reading in an JSON file and inserting numbers into numpy arrays
 import os
@@ -125,20 +131,20 @@ for i in range(1, 10):
         try:
             os.mkdir(pesdict[i].lower())
         except OSError:
-            print("Creation of the directory %s failed." % pesdict[i].lower())
+            print(f"Creation of the directory {pesdict[i].lower()} failed")
         else:
-            print("Successfully created the directory %s." % pesdict[i].lower())
+            print(f"Successfully created the directory {pesdict[i].lower()}")
     else:
-        print("Directory %s already exists." % pesdict[i].lower())
+        print(f"Directory {pesdict[i].lower()} already exists.")
 
     # change into the directory with the element name
     try:
         os.chdir(pesdict[i].lower())
     except OSError:
-        print("Could not change directory to %s." % pesdict[i].lower())
+        print(f"Could not change directory to {pesdict[i].lower()}")
         exit(1)
     else:
-        print("Successfully changed directory to %s." % pesdict[i].lower())
+        print(f"Successfully changed directory to {pesdict[i].lower()}")
 
     # Copy "hf_q-vSZP.json.conf" to current directory
     try:
