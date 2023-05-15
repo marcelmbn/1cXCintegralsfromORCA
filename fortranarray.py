@@ -16,3 +16,22 @@ def write_fortran_array(array, outfile):
             for j in range(array.shape[0]):
                 print(f"gmunu({j+1},{i}) = {array[j,i]:.8f}", file=f)
     f.close()
+
+def write_fortran_data(array, outfile: str) -> None:
+    '''
+    Write a NumPy array to a Fortran data statement so that it can be used in the
+    Fortran code for the GP3 method.
+    '''
+    with open(outfile, "w", encoding="utf8") as f:
+        print(f"real(wp), save, dimension(5, {array.shape[1]-1}) :: gmunu", file=f)
+        for i in range(array.shape[1]):
+            if i == 0:
+                continue
+            print(f"data gmunu(:,{i}) / &", file=f)
+            for j in range(0,5):
+                if j == 4:
+                    print(f"{array[j,i]:.7f}_wp /", file=f)
+                elif j == 0:
+                    print(f"& {array[j,i]:.7f}_wp, ", end="", file=f)
+                else:
+                    print(f"{array[j,i]:.7f}_wp, ", end="", file=f)

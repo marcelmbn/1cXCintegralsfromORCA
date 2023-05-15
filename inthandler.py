@@ -105,7 +105,7 @@ def modtwoelints(twoelints,ati,verb):
         msindo_xc_ints[2] = twoelints[6, 0, 6, 0]
         if msindo_xc_ints[2] <= 1e-7:
             msindo_xc_ints[2] = twoelints[0, 6, 0, 6]
-        print(f"p <-> d : {msindo_xc_ints[2]:.6f}")
+        print(f"s <-> d : {msindo_xc_ints[2]:.6f}")
         # 1c-XC integral between p and d functions
         pydxy = twoelints[2, 6, 2, 6]
         if pydxy <= 1e-7:

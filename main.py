@@ -13,7 +13,7 @@ import argparse
 import subprocess as sp
 import numpy as np
 from inthandler import jsonhandler,modtwoelints
-from fortranarray import write_fortran_array
+from fortranarray import write_fortran_array, write_fortran_data
 from strucIO import xyzwriter
 
 verb = False
@@ -121,7 +121,10 @@ if args.verbose:
 
 onecxcints = np.zeros((5, 87))
 
-for i in range(1, 10):
+for i in range(1, 87):
+    if i >= 58 and i <= 71:
+        print("Skipping element", "'", pesdict[i], "'")
+        continue
     print("Running for element", "'", pesdict[i], "'")
 
     # print current directory
@@ -182,6 +185,7 @@ for i in range(1, 10):
                 "--guess",
                 "hcore",
                 "--hfref",
+                "--noelprop"
             ],
             capture_output=True,
             text=True,
@@ -245,4 +249,5 @@ if verb:
 
 # write the onecenterxcints array to Fortran code.
 
-write_fortran_array(onecxcints, "onecxcints.f90")
+write_fortran_array(onecxcints, "onecxcints_array.f90")
+write_fortran_data(onecxcints, "onecxcints_data.f90")
