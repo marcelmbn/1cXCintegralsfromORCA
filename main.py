@@ -17,7 +17,8 @@ from fortranarray import write_fortran_array, write_fortran_data
 from strucIO import xyzwriter
 
 verb = False
-qvszp_path = "/home/marcel/source_rest/qvSZP/build/gfortran_D7F2A8A8CD19BA12/app/qvSZP"
+# qvszp_path = "/home/marcel/source_rest/qvSZP/build/gfortran_D7F2A8A8CD19BA12/app/qvSZP"
+qvszp_path = "qvSZP_v2"
 
 pesdict = {
     1: 'H',
@@ -163,7 +164,6 @@ for i in range(1, 87):
 
     # Write the xyz file with the uppercase element symbols and the lower case file name
     strucfile = pesdict[i].lower() + ".xyz"
-    # if i is not even:
     if i % 2:
         with open(".UHF", "w", encoding="utf8") as f:
             f.write("1")
@@ -176,16 +176,18 @@ for i in range(1, 87):
                 qvszp_path,
                 "--struc",
                 strucfile,
-                "--basisfile",
-                "/home/marcel/source_rest/qvSZP/basisq",
-                "--ecpfile",
-                "/home/marcel/source_rest/qvSZP/ecpq",
+                "--bfile",
+                "/home/marcel/source_rest/qvSZP/q-vSZP_basis/basisq_v7_Jan08",
+                "--efile",
+                "/home/marcel/source_rest/qvSZP/q-vSZP_basis/ecpq",
                 "--mpi",
                 "1",
                 "--guess",
                 "hcore",
                 "--hfref",
-                "--noelprop"
+                "--noelprop",
+                "--cm",
+                "extq"
             ],
             capture_output=True,
             text=True,
