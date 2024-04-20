@@ -17,7 +17,6 @@ from fortranarray import write_fortran_array, write_fortran_data
 from strucIO import xyzwriter
 
 verb = False
-# qvszp_path = "/home/marcel/source_rest/qvSZP/build/gfortran_D7F2A8A8CD19BA12/app/qvSZP"
 qvszp_path = "qvSZP_v2"
 
 pesdict = {
@@ -177,7 +176,7 @@ for i in range(1, 87):
                 "--struc",
                 strucfile,
                 "--bfile",
-                "/home/marcel/source_rest/qvSZP/q-vSZP_basis/basisq_v7_Jan08",
+                "~/source_rest/qvSZP/q-vSZP_basis/20240320/basisq_full_nolnac",
                 "--efile",
                 "/home/marcel/source_rest/qvSZP/q-vSZP_basis/ecpq",
                 "--mpi",

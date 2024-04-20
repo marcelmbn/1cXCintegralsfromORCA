@@ -28,10 +28,12 @@ def write_fortran_data(array, outfile: str) -> None:
             if i == 0:
                 continue
             print(f"data gmunu(:,{i}) / &", file=f)
-            for j in range(0,5):
-                if j == 4:
-                    print(f"{array[j,i]:.7f}_wp /", file=f)
-                elif j == 0:
+            for j in range(0,9):
+                if j == 0:
                     print(f"& {array[j,i]:.7f}_wp, ", end="", file=f)
+                elif j == 8:
+                    print(f"0.0000000_wp /", file=f)
+                elif j > 4:
+                    print(f"0.0000000_wp, ", end="", file=f)
                 else:
                     print(f"{array[j,i]:.7f}_wp, ", end="", file=f)
