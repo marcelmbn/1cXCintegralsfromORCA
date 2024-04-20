@@ -1,10 +1,10 @@
 #!/usr/bin/env python
-'''
+"""
 This script runs qvSZP for all elements in the periodic table,
 exports the 2-el integrals from ORCA,
 sorts and averages them,
 and writes them into a file in the format required by GP3.
-'''
+"""
 
 # Python script for reading in an JSON file and inserting numbers into numpy arrays
 import os
@@ -12,112 +12,120 @@ import sys
 import argparse
 import subprocess as sp
 import numpy as np
-from inthandler import jsonhandler,modtwoelints
+from inthandler import jsonhandler, modtwoelints
 from fortranarray import write_fortran_array, write_fortran_data
 from strucIO import xyzwriter
+from q_cn_import import read_q_cn
 
 verb = False
 qvszp_path = "qvSZP_v2"
 
 pesdict = {
-    1: 'H',
-    2: 'He',
-    3: 'Li',
-    4: 'Be',
-    5: 'B',
-    6: 'C',
-    7: 'N',
-    8: 'O',
-    9: 'F',
-    10: 'Ne',
-    11: 'Na',
-    12: 'Mg',
-    13: 'Al',
-    14: 'Si',
-    15: 'P',
-    16: 'S',
-    17: 'Cl',
-    18: 'Ar',
-    19: 'K',
-    20: 'Ca',
-    21: 'Sc',
-    22: 'Ti',
-    23: 'V',
-    24: 'Cr',
-    25: 'Mn',
-    26: 'Fe',
-    27: 'Co',
-    28: 'Ni',
-    29: 'Cu',
-    30: 'Zn',
-    31: 'Ga',
-    32: 'Ge',
-    33: 'As',
-    34: 'Se',
-    35: 'Br',
-    36: 'Kr',
-    37: 'Rb',
-    38: 'Sr',
-    39: 'Y',
-    40: 'Zr',
-    41: 'Nb',
-    42: 'Mo',
-    43: 'Tc',
-    44: 'Ru',
-    45: 'Rh',
-    46: 'Pd',
-    47: 'Ag',
-    48: 'Cd',
-    49: 'In',
-    50: 'Sn',
-    51: 'Sb',
-    52: 'Te',
-    53: 'I',
-    54: 'Xe',
-    55: 'Cs',
-    56: 'Ba',
-    57: 'La',
-    58: 'Ce',
-    59: 'Pr',
-    60: 'Nd',
-    61: 'Pm',
-    62: 'Sm',
-    63: 'Eu',
-    64: 'Gd',
-    65: 'Tb',
-    66: 'Dy',
-    67: 'Ho',
-    68: 'Er',
-    69: 'Tm',
-    70: 'Yb',
-    71: 'Lu',
-    72: 'Hf',
-    73: 'Ta',
-    74: 'W',
-    75: 'Re',
-    76: 'Os',
-    77: 'Ir',
-    78: 'Pt',
-    79: 'Au',
-    80: 'Hg',
-    81: 'Tl',
-    82: 'Pb',
-    83: 'Bi',
-    84: 'Po',
-    85: 'At',
-    86: 'Rn',
+    1: "H",
+    2: "He",
+    3: "Li",
+    4: "Be",
+    5: "B",
+    6: "C",
+    7: "N",
+    8: "O",
+    9: "F",
+    10: "Ne",
+    11: "Na",
+    12: "Mg",
+    13: "Al",
+    14: "Si",
+    15: "P",
+    16: "S",
+    17: "Cl",
+    18: "Ar",
+    19: "K",
+    20: "Ca",
+    21: "Sc",
+    22: "Ti",
+    23: "V",
+    24: "Cr",
+    25: "Mn",
+    26: "Fe",
+    27: "Co",
+    28: "Ni",
+    29: "Cu",
+    30: "Zn",
+    31: "Ga",
+    32: "Ge",
+    33: "As",
+    34: "Se",
+    35: "Br",
+    36: "Kr",
+    37: "Rb",
+    38: "Sr",
+    39: "Y",
+    40: "Zr",
+    41: "Nb",
+    42: "Mo",
+    43: "Tc",
+    44: "Ru",
+    45: "Rh",
+    46: "Pd",
+    47: "Ag",
+    48: "Cd",
+    49: "In",
+    50: "Sn",
+    51: "Sb",
+    52: "Te",
+    53: "I",
+    54: "Xe",
+    55: "Cs",
+    56: "Ba",
+    57: "La",
+    58: "Ce",
+    59: "Pr",
+    60: "Nd",
+    61: "Pm",
+    62: "Sm",
+    63: "Eu",
+    64: "Gd",
+    65: "Tb",
+    66: "Dy",
+    67: "Ho",
+    68: "Er",
+    69: "Tm",
+    70: "Yb",
+    71: "Lu",
+    72: "Hf",
+    73: "Ta",
+    74: "W",
+    75: "Re",
+    76: "Os",
+    77: "Ir",
+    78: "Pt",
+    79: "Au",
+    80: "Hg",
+    81: "Tl",
+    82: "Pb",
+    83: "Bi",
+    84: "Po",
+    85: "At",
+    86: "Rn",
 }
 
 # Parse command line arguments
-parser = argparse.ArgumentParser(
-    description="Run qvSZP for all elements in pesdict."
+parser = argparse.ArgumentParser(description="Run qvSZP for all elements in pesdict.")
+parser.add_argument(
+    "-v", "--verbose", action="store_true", help="increase output verbosity"
 )
-parser.add_argument("-v", "--verbose", action="store_true", help="increase output verbosity")
+parser.add_argument(
+    "-ext", "--external_charges", action="store_true", help="use external charges"
+)
 args = parser.parse_args()
 
 if args.verbose:
     print("verbosity turned on")
     verb = True
+
+if args.external_charges:
+    print("Using external charges")
+    q_cn_dict = read_q_cn("q_cn.dat", verb)
 
 onecxcints = np.zeros((5, 87))
 
@@ -169,6 +177,13 @@ for i in range(1, 87):
         f.close()
     xyzwriter(pesdict[i].upper(), strucfile)
 
+    # if external charges are used, write the charges to the file "ext.charges"
+    if args.external_charges:
+        with open("ext.charges", "w", encoding="utf8") as f:
+            line = str(q_cn_dict[str(i)]["q"]) + " " + str(q_cn_dict[str(i)]["CN"])
+            f.write(line)
+        f.close()
+
     try:
         process = sp.run(
             [
@@ -186,7 +201,7 @@ for i in range(1, 87):
                 "--hfref",
                 "--noelprop",
                 "--cm",
-                "extq"
+                "extq",
             ],
             capture_output=True,
             text=True,
@@ -226,7 +241,7 @@ for i in range(1, 87):
     f.close()
 
     # Read in the json file
-    twoelints = jsonhandler("hf_q-vSZP.json", pesdict[i].lower(),verb)
+    twoelints = jsonhandler("hf_q-vSZP.json", pesdict[i].lower(), verb)
 
     if verb:
         # print the twoelints numpy array
@@ -235,7 +250,7 @@ for i in range(1, 87):
     msindo_xc_ints = modtwoelints(twoelints, i, verb)
     # incorporate the msindo xc integrals into the onecenterxcints array for the current element
     # the whole vector of size 5 is copied into the array at the position of the current element
-    onecxcints[:,i] = msindo_xc_ints
+    onecxcints[:, i] = msindo_xc_ints
 
     # change back into the parent directory
     try:
