@@ -18,7 +18,9 @@ from strucIO import xyzwriter
 from q_cn_import import read_q_cn
 
 verb = False
-qvszp_path = "qvSZP_v2"
+qvszp_path = "qvSZP"
+print("Binary used:")
+sp.run(["which", "qvSZP"])
 
 pesdict = {
     1: "H",
@@ -117,6 +119,7 @@ parser.add_argument(
 parser.add_argument(
     "-ext", "--external_charges", action="store_true", help="use external charges"
 )
+parser.add_argument("-dry", "--dry_run", action="store_true", help="only perform first input generation")
 args = parser.parse_args()
 
 if args.verbose:
@@ -124,7 +127,8 @@ if args.verbose:
     verb = True
 
 if args.external_charges:
-    print("Using external charges")
+    if verb:
+        print("Using external charges")
     q_cn_dict = read_q_cn("q_cn.dat", verb)
 
 onecxcints = np.zeros((5, 87))
@@ -178,11 +182,13 @@ for i in range(1, 87):
     xyzwriter(pesdict[i].upper(), strucfile)
 
     # if external charges are used, write the charges to the file "ext.charges"
+    chargemodel="ceh_external"
     if args.external_charges:
         with open("ext.charges", "w", encoding="utf8") as f:
             line = str(q_cn_dict[str(i)]["q"]) + " " + str(q_cn_dict[str(i)]["CN"])
             f.write(line)
         f.close()
+        chargemodel="ext"
 
     try:
         process = sp.run(
@@ -191,7 +197,7 @@ for i in range(1, 87):
                 "--struc",
                 strucfile,
                 "--bfile",
-                "~/source_rest/qvSZP/q-vSZP_basis/20240320/basisq_full_nolnac",
+                "/home/marcel/source_rest/qvSZP/q-vSZP_basis/20240320/basisq_full_nolnac",
                 "--efile",
                 "/home/marcel/source_rest/qvSZP/q-vSZP_basis/ecpq",
                 "--mpi",
@@ -201,7 +207,7 @@ for i in range(1, 87):
                 "--hfref",
                 "--noelprop",
                 "--cm",
-                "extq",
+                chargemodel,
             ],
             capture_output=True,
             text=True,
@@ -213,6 +219,8 @@ for i in range(1, 87):
     else:
         if verb:
             print("Output: ", process.stdout)
+    if args.dry_run:
+        sys.exit(0)
 
     with open("orca.out", "w", encoding="utf8") as f:
         try:
