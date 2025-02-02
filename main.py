@@ -17,10 +17,9 @@ from fortranarray import write_fortran_array, write_fortran_data
 from strucIO import xyzwriter
 from q_cn_import import read_q_cn
 
-verb = False
-qvszp_path = "qvSZP"
+QVSZP_PATH = "qvSZP"
 print("Binary used:")
-sp.run(["which", "qvSZP"])
+sp.run(["which", "qvSZP"], check=True)
 
 pesdict = {
     1: "H",
@@ -114,30 +113,32 @@ pesdict = {
 # Parse command line arguments
 parser = argparse.ArgumentParser(description="Run qvSZP for all elements in pesdict.")
 parser.add_argument(
-    "-v", "--verbose", action="store_true", help="increase output verbosity"
+    "-v",
+    "--verbose",
+    action="store_true",
+    default=False,
+    help="increase output verbosity",
 )
 parser.add_argument(
     "-ext", "--external_charges", action="store_true", help="use external charges"
 )
-parser.add_argument("-dry", "--dry_run", action="store_true", help="only perform first input generation")
+parser.add_argument(
+    "-dry", "--dry_run", action="store_true", help="only perform first input generation"
+)
 args = parser.parse_args()
 
-if args.verbose:
-    print("verbosity turned on")
-    verb = True
-
 if args.external_charges:
-    if verb:
+    if args.verbose:
         print("Using external charges")
-    q_cn_dict = read_q_cn("q_cn.dat", verb)
+    q_cn_dict = read_q_cn("q_cn.dat", args.verbose)
 
 onecxcints = np.zeros((5, 87))
 
 for i in range(1, 87):
-    if i >= 58 and i <= 71:
-        print("Skipping element", "'", pesdict[i], "'")
+    if 57 < i < 72:
+        print(f"Skipping element {pesdict[i]}")
         continue
-    print("Running for element", "'", pesdict[i], "'")
+    print(f"Running for element {pesdict[i]}")
 
     # print current directory
     print("Current working directory:", os.getcwd())
@@ -155,11 +156,10 @@ for i in range(1, 87):
     # change into the directory with the element name
     try:
         os.chdir(pesdict[i].lower())
-    except OSError:
+    except OSError as err:
         print(f"Could not change directory to {pesdict[i].lower()}")
-        exit(1)
-    else:
-        print(f"Successfully changed directory to {pesdict[i].lower()}")
+        raise SystemExit(1) from err
+    print(f"Successfully changed directory to {pesdict[i].lower()}")
 
     # Copy "hf_q-vSZP.json.conf" to current directory
     try:
@@ -171,7 +171,7 @@ for i in range(1, 87):
         )
     except sp.CalledProcessError as err:
         print("Error: ", err.stderr)
-        exit(1)
+        raise SystemExit(1) from err
 
     # Write the xyz file with the uppercase element symbols and the lower case file name
     strucfile = pesdict[i].lower() + ".xyz"
@@ -182,32 +182,31 @@ for i in range(1, 87):
     xyzwriter(pesdict[i].upper(), strucfile)
 
     # if external charges are used, write the charges to the file "ext.charges"
-    chargemodel="ceh_external"
     if args.external_charges:
         with open("ext.charges", "w", encoding="utf8") as f:
-            line = str(q_cn_dict[str(i)]["q"]) + " " + str(q_cn_dict[str(i)]["CN"])
-            f.write(line)
+            f.write(str(q_cn_dict[str(i)]["q"]) + " " + str(q_cn_dict[str(i)]["CN"]))
         f.close()
-        chargemodel="ext"
+        CHARGEMODEL = "ext"
+    else:
+        CHARGEMODEL = "ceh_external"
 
     try:
         process = sp.run(
             [
-                qvszp_path,
+                QVSZP_PATH,
                 "--struc",
                 strucfile,
                 "--bfile",
-                "/home/marcel/source_rest/qvSZP/q-vSZP_basis/20240320/basisq_full_nolnac",
+                "/Users/marcelmueller/source/qvSZP/q-vSZP_basis/basisq-3.0.0",
                 "--efile",
-                "/home/marcel/source_rest/qvSZP/q-vSZP_basis/ecpq",
+                "/Users/marcelmueller/source/qvSZP/q-vSZP_basis/ecpq",
                 "--mpi",
-                "1",
+                "4",
                 "--guess",
                 "hcore",
                 "--hfref",
-                "--noelprop",
                 "--cm",
-                chargemodel,
+                CHARGEMODEL,
             ],
             capture_output=True,
             text=True,
@@ -215,9 +214,9 @@ for i in range(1, 87):
         )
     except sp.CalledProcessError as err:
         print("Error: ", err.stderr)
-        exit(1)
+        raise SystemExit(1) from err
     else:
-        if verb:
+        if args.verbose:
             print("Output: ", process.stdout)
     if args.dry_run:
         sys.exit(0)
@@ -232,7 +231,7 @@ for i in range(1, 87):
             )
         except sp.CalledProcessError as err:
             print("Error: ", err.stderr)
-            exit(1)
+            raise SystemExit(1) from err
     f.close()
 
     with open("orca_2json.out", "w", encoding="utf8") as f:
@@ -245,17 +244,17 @@ for i in range(1, 87):
             )
         except sp.CalledProcessError as err:
             print("Error: ", err.stderr)
-            exit(1)
+            raise SystemExit(1) from err
     f.close()
 
     # Read in the json file
-    twoelints = jsonhandler("hf_q-vSZP.json", pesdict[i].lower(), verb)
+    twoelints = jsonhandler("hf_q-vSZP.json", pesdict[i].lower(), args.verbose)
 
-    if verb:
+    if args.verbose:
         # print the twoelints numpy array
         print(twoelints)
 
-    msindo_xc_ints = modtwoelints(twoelints, i, verb)
+    msindo_xc_ints = modtwoelints(twoelints, i, args.verbose)
     # incorporate the msindo xc integrals into the onecenterxcints array for the current element
     # the whole vector of size 5 is copied into the array at the position of the current element
     onecxcints[:, i] = msindo_xc_ints
@@ -263,11 +262,11 @@ for i in range(1, 87):
     # change back into the parent directory
     try:
         os.chdir("..")
-    except OSError:
+    except OSError as err:
         print(f"Could not change directory to {os.getcwd()}.")
-        sys.exit(1)
+        raise SystemExit(1) from err
 
-if verb:
+if args.verbose:
     # print the onecenterxcints array
     print(onecxcints)
 

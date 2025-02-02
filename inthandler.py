@@ -1,17 +1,18 @@
-'''
+"""
 This script reads the 2-el integrals from a JSON file and writes them into a numpy array.
 The indices are swapped to match the order of the integrals in the GP3 method.
 Relevant integrals are separated and written into a file in the format required by GP3.
-'''
+"""
 
 import json
 import numpy as np
 
+
 def jsonhandler(inpfile, outprefix, verb):
-    '''
+    """
     Read in the JSON file and write the integrals into a numpy array and a file.
     Indices are swapped to match the order of the integrals in the GP3 method.
-    '''
+    """
     # Open the JSON file
     with open(inpfile, encoding="utf8") as json_file:
         data = json.load(json_file)
@@ -21,7 +22,7 @@ def jsonhandler(inpfile, outprefix, verb):
     print("Creating numpy arrays...")
 
     # Get the 2elIntegrals list from the data
-    integrals_list = data["Molecule"]["2elIntegrals"]
+    integrals_list = data["Molecule"]["2elIntegrals"]["AO_PQRS"][0]
 
     integrals_array = np.array(integrals_list)
     # Swap the indices
@@ -46,7 +47,6 @@ def jsonhandler(inpfile, outprefix, verb):
     integrals_swapped = np.where(integrals_swapped == 16, 6, integrals_swapped)
     integrals_swapped = np.where(integrals_swapped == 17, 7, integrals_swapped)
     integrals_swapped = np.where(integrals_swapped == 18, 8, integrals_swapped)
-
 
     if verb:
         print("Swapped indices:")
@@ -82,10 +82,11 @@ def jsonhandler(inpfile, outprefix, verb):
     )
     return twoelints
 
-def modtwoelints(twoelints,ati,verb):
-    '''
+
+def modtwoelints(twoelints, ati, verb):
+    """
     Modify the two-electron integrals to match the MSINDO-XC method.
-    '''
+    """
     print("Modifying two-electron integrals...")
     msindo_xc_ints = np.zeros((5))
 
@@ -119,7 +120,9 @@ def modtwoelints(twoelints,ati,verb):
         pzdz2 = twoelints[3, 5, 3, 5]
         if pzdz2 <= 1e-7:
             pzdz2 = twoelints[5, 3, 5, 3]
-        msindo_xc_ints[3] = ( pydxy * 8.0 + pydxz * 4.0 + pydz2 * 2.0 + pzdz2 * 1.0 ) / 15.0
+        msindo_xc_ints[3] = (
+            pydxy * 8.0 + pydxz * 4.0 + pydz2 * 2.0 + pzdz2 * 1.0
+        ) / 15.0
         if verb:
             print("pydxy:    ", pydxy)
             print("pydxz:    ", pydxz)
@@ -131,16 +134,18 @@ def modtwoelints(twoelints,ati,verb):
         dxydx2y2 = twoelints[6, 4, 6, 4]
         if dxydx2y2 <= 1e-7:
             dxydx2y2 = twoelints[4, 6, 4, 6]
-        dxydyz   = twoelints[6, 8, 6, 8]
+        dxydyz = twoelints[6, 8, 6, 8]
         if dxydyz <= 1e-7:
             dxydyz = twoelints[8, 6, 8, 6]
-        dxydz2   = twoelints[6, 5, 6, 5]
+        dxydz2 = twoelints[6, 5, 6, 5]
         if dxydz2 <= 1e-7:
             dxydz2 = twoelints[5, 6, 5, 6]
-        dxzdz2   = twoelints[7, 5, 7, 5]
+        dxzdz2 = twoelints[7, 5, 7, 5]
         if dxzdz2 <= 1e-7:
             dxzdz2 = twoelints[5, 7, 5, 7]
-        msindo_xc_ints[4] = (dxydx2y2 * 1.0 + dxydyz * 5.0 + dxydz2 * 2.0 + dxzdz2 * 2.0) / 10.0
+        msindo_xc_ints[4] = (
+            dxydx2y2 * 1.0 + dxydyz * 5.0 + dxydz2 * 2.0 + dxzdz2 * 2.0
+        ) / 10.0
         if verb:
             print("dxydx2y2: ", dxydx2y2)
             print("dxydyz:   ", dxydyz)

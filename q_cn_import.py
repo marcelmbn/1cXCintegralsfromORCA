@@ -1,11 +1,9 @@
-'''
+"""
 Module reading element-specific individual charges and CNs from a file.
-'''
-
-import sys
+"""
 
 
-def read_q_cn(filename,verb) -> dict:
+def read_q_cn(filename, verb) -> dict:
     """
     Read the element-specific individual charges and CNs from the file.
     The file looks as follows:
@@ -31,7 +29,8 @@ def read_q_cn(filename,verb) -> dict:
         verb (bool): Verbose output.
 
     Returns:
-        dict: The dictionary with the element-specific individual charges and CNs: dict[element, dict["q","CN"]].
+        dict: The dictionary with the element-specific individual charges
+              and CNs: dict[element, dict["q","CN"]].
 
     """
     # Read the file
@@ -50,17 +49,16 @@ def read_q_cn(filename,verb) -> dict:
     for line in lines:
         if line[0] == "#":
             continue
-        else:
-            # Split the line
-            values = line.split()
-            # Get the element
-            element = values[0]
-            # Get the charge
-            q = float(values[1])
-            # Get the CN
-            CN = float(values[2])
-            # Add the element to the dictionary
-            q_cn_dict[element] = {"q": q, "CN": CN}
+        # Split the line
+        values = line.split()
+        # Get the element
+        element = values[0]
+        # Get the charge
+        q = float(values[1])
+        # Get the CN
+        cn = float(values[2])
+        # Add the element to the dictionary
+        q_cn_dict[element] = {"q": q, "CN": cn}
 
     if verb:
         print(q_cn_dict)
