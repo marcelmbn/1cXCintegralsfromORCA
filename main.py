@@ -19,6 +19,7 @@ from inthandler import (
     modtwoelints_analytic_average_legacy,
     average_shell_exchange_integrals,
 )
+from plot import plot_onexc_ints
 from fortranarray import write_fortran_array, write_fortran_data
 from strucIO import xyzwriter
 from q_cn_import import read_q_cn
@@ -208,6 +209,15 @@ if args.specific_element:
         raise ValueError(f"Element {args.specific_element} not in the periodic table.")
 
 onecxcints = np.zeros((9, 104))
+# if onexcints.npy is a file, load it and plot it
+if Path("onecxcints.npy").is_file():
+    onecxcints = np.load("onecxcints.npy")
+    plot_onexc_ints(onecxcints)
+    # write the onecenterxcints array to Fortran code.
+    write_fortran_array(onecxcints, "onecxcints_array.f90")
+    write_fortran_data(onecxcints, "onecxcints_data.f90")
+    if args.read_only:
+        sys.exit(0)
 
 # print current directory via pathlib
 print("Current working directory:", Path.cwd())
@@ -337,6 +347,10 @@ if args.verbose:
     print("Final 1c-XC ints:")
     print(onecxcints)
 
+# dump onexcints to a file for later use
+np.save("onecxcints.npy", onecxcints)
+# plot the onecenterxcints array
+plot_onexc_ints(onecxcints)
 # write the onecenterxcints array to Fortran code.
 write_fortran_array(onecxcints, "onecxcints_array.f90")
 write_fortran_data(onecxcints, "onecxcints_data.f90")
