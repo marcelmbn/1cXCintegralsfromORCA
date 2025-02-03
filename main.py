@@ -21,7 +21,7 @@ from inthandler import (
 )
 from plot import plot_onexc_ints
 from fortranarray import write_fortran_array, write_fortran_data
-from strucIO import xyzwriter
+from strucio import xyzwriter
 from q_cn_import import read_q_cn
 
 QVSZP_PATH = "qvSZP"

@@ -5,7 +5,7 @@ Plot the 1c XC integral data.
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
+import seaborn as sns # type: ignore
 
 
 def plot_onexc_ints(array: np.ndarray) -> None:
@@ -33,27 +33,27 @@ def plot_onexc_ints(array: np.ndarray) -> None:
         for elem_idx in range(array.shape[1]):
             shell_interaction: str
             if shell_idx == 0:
-                shell_interaction = "s - p"
+                shell_interaction = r"$s$ - $p$"
             elif shell_idx == 1:
-                shell_interaction = "p - p'"
+                shell_interaction = r"$p$ - $p'$"
             elif shell_idx == 2:
-                shell_interaction = "s - d"
+                shell_interaction = r"$s$ - $d$"
             elif shell_idx == 3:
-                shell_interaction = "p - d"
+                shell_interaction = r"$p$ - $d$"
             elif shell_idx == 4:
-                shell_interaction = "d - d'"
+                shell_interaction = r"$d$ - $d'$"
             elif shell_idx == 5:
-                shell_interaction = "s - f"
+                shell_interaction = r"$s$ - $f$"
             elif shell_idx == 6:
-                shell_interaction = "p - f"
+                shell_interaction = r"$p$ - $f$"
             elif shell_idx == 7:
-                shell_interaction = "d - f"
+                shell_interaction = r"$d$ - $f$"
             elif shell_idx == 8:
-                shell_interaction = "f - f'"
+                shell_interaction = r"$f$ - $f'$"
             data.append(
                 {
                     "Shell Interaction": shell_interaction,
-                    "Element Number": elem_idx + 1,
+                    "Element Number": elem_idx,
                     "Integral Value": array[shell_idx, elem_idx],
                 }
             )
@@ -61,6 +61,10 @@ def plot_onexc_ints(array: np.ndarray) -> None:
     df = pd.DataFrame(data)
 
     plt.figure(figsize=(10, 6))
+    # define Roboto Condensed as the default font
+    plt.rcParams["font.family"] = "sans-serif"
+    plt.rcParams["font.sans-serif"] = "Roboto Condensed"
+    plt.rcParams["font.weight"] = "regular"
     sns.lineplot(
         data=df,
         x="Element Number",
@@ -72,7 +76,7 @@ def plot_onexc_ints(array: np.ndarray) -> None:
     plt.title("shell-averaged one-center exchange integrals")
     plt.xlabel("element number")
     plt.ylabel("integral value / a.u.")
-    plt.legend(title="shell interaction", loc="best")
+    plt.legend(loc="best")
     plt.tight_layout()
     plt.savefig("onecxcints.png", dpi=300)
     plt.show()
