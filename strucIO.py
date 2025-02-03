@@ -2,8 +2,10 @@
 This module contains routines for IO of structure files.
 """
 
+from pathlib import Path
 
-def xyzwriter(attype, filename):
+
+def xyzwriter(attype: str, filename: Path) -> None:
     """Write a single xyz file with the given attype and filename."""
 
     # Create the xyz file

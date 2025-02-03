@@ -7,7 +7,8 @@ and writes them into a file in the format required by GP3.
 """
 
 # Python script for reading in an JSON file and inserting numbers into numpy arrays
-import os
+import shutil
+from pathlib import Path
 import sys
 import argparse
 import subprocess as sp
@@ -23,8 +24,11 @@ from strucIO import xyzwriter
 from q_cn_import import read_q_cn
 
 QVSZP_PATH = "qvSZP"
+qvszp_binary = shutil.which(QVSZP_PATH)
+if qvszp_binary is None:
+    raise ImportError(f"Could not find {QVSZP_PATH} in $PATH.")
 print("Binary used:")
-sp.run(["which", "qvSZP"], check=True)
+print(qvszp_binary)
 
 pesdict = {
     1: "H",
@@ -145,56 +149,33 @@ if args.external_charges:
 
 onecxcints = np.zeros((5, 87))
 
+# print current directory via pathlib
+print("Current working directory:", Path.cwd())
 for i in range(1, 87):
     if 57 < i < 72:
         print(f"Skipping element {pesdict[i]}")
         continue
     print(f"Running for element {pesdict[i]}")
 
-    # print current directory
-    print("Current working directory:", os.getcwd())
     # check if a directory with the element name exists and if not create it
-    if not os.path.exists(pesdict[i].lower()):
-        try:
-            os.mkdir(pesdict[i].lower())
-        except OSError:
-            print(f"Creation of the directory {pesdict[i].lower()} failed")
-        else:
-            print(f"Successfully created the directory {pesdict[i].lower()}")
-    else:
-        print(f"Directory {pesdict[i].lower()} already exists.")
-
-    # change into the directory with the element name
-    try:
-        os.chdir(pesdict[i].lower())
-    except OSError as err:
-        print(f"Could not change directory to {pesdict[i].lower()}")
-        raise SystemExit(1) from err
-    print(f"Successfully changed directory to {pesdict[i].lower()}")
+    element_path = Path(pesdict[i].lower()).resolve()
+    element_path.mkdir(exist_ok=True)
+    print(f"Successfully created the directory {element_path}")
 
     # Copy "hf_q-vSZP.json.conf" to current directory
-    try:
-        process = sp.run(
-            ["cp", "../hf_q-vSZP.json.conf", "."],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-    except sp.CalledProcessError as err:
-        print("Error: ", err.stderr)
-        raise SystemExit(1) from err
+    shutil.copy("hf_q-vSZP.json.conf", element_path)
 
     # Write the xyz file with the uppercase element symbols and the lower case file name
-    strucfile = pesdict[i].lower() + ".xyz"
+    strucfile = element_path / (pesdict[i].lower() + ".xyz")
     if i % 2:
-        with open(".UHF", "w", encoding="utf8") as f:
+        with open(element_path / ".UHF", "w", encoding="utf8") as f:
             f.write("1")
         f.close()
     xyzwriter(pesdict[i].upper(), strucfile)
 
     # if external charges are used, write the charges to the file "ext.charges"
     if args.external_charges:
-        with open("ext.charges", "w", encoding="utf8") as f:
+        with open(element_path / "ext.charges", "w", encoding="utf8") as f:
             f.write(str(q_cn_dict[str(i)]["q"]) + " " + str(q_cn_dict[str(i)]["CN"]))
         f.close()
         CHARGEMODEL = "ext"
@@ -204,9 +185,9 @@ for i in range(1, 87):
     try:
         process = sp.run(
             [
-                QVSZP_PATH,
+                qvszp_binary,
                 "--struc",
-                strucfile,
+                strucfile.name,
                 "--bfile",
                 "/Users/marcelmueller/source/qvSZP/q-vSZP_basis/basisq-3.0.0",
                 "--efile",
@@ -219,52 +200,55 @@ for i in range(1, 87):
                 "--cm",
                 CHARGEMODEL,
             ],
+            cwd=element_path,
             capture_output=True,
             text=True,
             check=True,
         )
     except sp.CalledProcessError as err:
-        print("Error: ", err.stderr)
+        print(f"Error in qvSZP execution:\n{err.stderr}")
         raise SystemExit(1) from err
     if args.verbose:
         print("Output: ", process.stdout)
     if args.dry_run:
         sys.exit(0)
 
-    with open("orca.out", "w", encoding="utf8") as f:
+    with open(element_path / "orca.out", "w", encoding="utf8") as f:
         try:
             process = sp.run(
                 ["orca", "hf_q-vSZP.inp"],
                 stdout=f,
+                cwd=element_path,
                 check=True,
                 text=True,
             )
         except sp.CalledProcessError as err:
-            print("Error: ", err.stderr)
+            print(f"Error in ORCA execution:\n{err.stderr}")
             raise SystemExit(1) from err
     f.close()
 
-    with open("orca_2json.out", "w", encoding="utf8") as f:
+    with open(element_path / "orca_2json.out", "w", encoding="utf8") as f:
         try:
             process = sp.run(
                 ["orca_2json", "hf_q-vSZP.gbw"],
                 stdout=f,
+                cwd=element_path,
                 check=True,
                 text=True,
             )
         except sp.CalledProcessError as err:
-            print("Error: ", err.stderr)
+            print(f"Error in orca_2json execution:\n{err.stderr}")
             raise SystemExit(1) from err
     f.close()
 
     # Read in the json file
     if args.legacy:
         twoelints = jsonhandler_resorting_legacy(
-            "hf_q-vSZP.json", pesdict[i].lower(), args.verbose
+            element_path / "hf_q-vSZP.json", pesdict[i].lower(), args.verbose
         )
     else:
         twoelints = jsonhandler_no_resorting(
-            "hf_q-vSZP.json", pesdict[i].lower(), args.verbose
+            element_path / "hf_q-vSZP.json", pesdict[i].lower(), args.verbose
         )
 
     if args.verbose and args.legacy:
@@ -280,14 +264,6 @@ for i in range(1, 87):
     # incorporate the msindo xc integrals into the onecenterxcints array for the current element
     # the whole vector of size 5 is copied into the array at the position of the current element
     onecxcints[:, i] = msindo_xc_ints
-
-    # change back into the parent directory
-    try:
-        os.chdir("..")
-    except OSError as err:
-        print(f"Could not change directory to {os.getcwd()}.")
-        raise SystemExit(1) from err
-    # raise SystemExit(1)
 
 if args.verbose:
     # print the onecenterxcints array

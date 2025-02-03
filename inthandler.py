@@ -5,10 +5,11 @@ Relevant integrals are separated and written into a file in the format required 
 """
 
 import json
+from pathlib import Path
 import numpy as np
 
 
-def jsonhandler_resorting_legacy(inpfile, outprefix, verb):
+def jsonhandler_resorting_legacy(inpfile: Path, outprefix: str, verb: bool):
     """
     Read in the JSON file and write the integrals into a numpy array and a file.
     Indices are swapped to match the order of the integrals in the GP3 method.
@@ -54,8 +55,8 @@ def jsonhandler_resorting_legacy(inpfile, outprefix, verb):
         print("Original indices:")
         print(integrals_array)
 
-    outfile_orcaorder = outprefix + "_integrals_ORCAorder.dat"
-    outfile_gp3order = outprefix + "_integrals_GP3order.dat"
+    outfile_orcaorder = inpfile.parent / (outprefix + "_integrals_ORCAorder.dat")
+    outfile_gp3order = inpfile.parent / (outprefix + "_integrals_GP3order.dat")
 
     # convert the 2-dimensional numpy array into a 4-dimensional
     # numpy array with the first four fields as indices
@@ -83,7 +84,7 @@ def jsonhandler_resorting_legacy(inpfile, outprefix, verb):
     return twoelints
 
 
-def jsonhandler_no_resorting(inpfile, outprefix, verb):
+def jsonhandler_no_resorting(inpfile: Path, outprefix: str, verb: bool):
     """
     Read in the JSON file and write the integrals into a numpy array and a file.
     """
@@ -101,7 +102,7 @@ def jsonhandler_no_resorting(inpfile, outprefix, verb):
     # integrals_array: two-dimensional numpy array of 2-el integrals data
     integrals_array = np.array(integrals_list)
     # outfile_orcaorder: output file name for the 2-el integrals in ORCA order
-    outfile_orcaorder = outprefix + "_integrals_ORCAorder.dat"
+    outfile_orcaorder = inpfile.parent / (outprefix + "_integrals_ORCAorder.dat")
     # twoelints: four-dimensional numpy array of 2-el integrals data
     #            all indices are in the range 0-15 for the 16 basis functions
     #            s: 0
@@ -127,7 +128,7 @@ p   q   r   s  <integral value>",
     return twoelints
 
 
-def modtwoelints_analytic_average_legacy(twoelints, ati, verb):
+def modtwoelints_analytic_average_legacy(twoelints: np.ndarray, ati: int, verb: bool):
     """
     Modify the two-electron integrals to match the MSINDO-XC method.
     """
