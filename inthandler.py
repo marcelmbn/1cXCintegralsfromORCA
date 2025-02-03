@@ -118,7 +118,7 @@ def jsonhandler_no_resorting(inpfile: Path, outprefix: str, verb: bool):
 9 -> fz3, 10 -> fxz2, 11 -> fyz2, 12 -> fzx2-y2, 13 -> fxyz, 14 -> fx(x2-3y2), 15 -> fy(3x2-y2)\n\
 p   q   r   s  <integral value>",
     )
-    twoelints = np.zeros((16, 16, 16, 16))
+    twoelints = np.zeros((29, 29, 29, 29))
     for row in integrals_array:
         if verb:
             print(
@@ -200,12 +200,57 @@ def modtwoelints_analytic_average_legacy(twoelints: np.ndarray, ati: int, verb: 
     return msindo_xc_ints
 
 
-def average_shell_exchange_integrals(ints: np.ndarray, verb: bool) -> np.ndarray:
+def average_shell_exchange_integrals(
+    ints: np.ndarray, ati: int, verb: bool
+) -> np.ndarray:
     """
     Modify the two-electron integrals to match the MSINDO-XC method.
+    NOTE: # Numbering of spherical AOs:
+
+    General case:
+    S -> 1
+    P -> 4
+    D -> 9
+    F -> 16
+
+    Caution: Numbering seems weird as f basis for Ln's/Ac's is not large-core ECP:
+    S -> 1
+    S -> 2
+    S -> 3
+    P -> 6
+    P -> 9
+    P -> 12
+    D -> 17
+    D -> 22
+    F -> 29
+
+    Caution: Neither for Fr, Ra:
+    S -> 1
+    S -> 2
+    P -> 5
+    P -> 8
+    D -> 13
+    F -> 20
     """
+    s_valence_range = [0]
+    if 57 < ati < 72 or ati > 88:
+        s_valence_range = [2]
+    elif 86 < ati < 89:
+        s_valence_range = [1]
+    p_valence_range = range(1, 4)
+    if 57 < ati < 72 or ati > 88:
+        p_valence_range = range(9, 12)
+    elif 86 < ati < 89:
+        p_valence_range = range(5, 8)
+    d_valence_range = range(4, 9)
+    if 57 < ati < 72 or ati > 88:
+        d_valence_range = range(17, 22)
+    elif 86 < ati < 89:
+        d_valence_range = range(8, 13)
+    # NOTE: Only conducted for Ln's/Ac's!
+    f_valence_range = range(22, 29)
     print("Modifying two-electron integrals...")
-    msindo_xc_ints = np.zeros((5))
+    msindo_xc_ints = np.zeros((9))
     #################
     # s-p integrals:
     #################
@@ -213,15 +258,19 @@ def average_shell_exchange_integrals(ints: np.ndarray, verb: bool) -> np.ndarray
     counter: int = 0
     sum_s_p: float = 0.0
     effective_counter: int = 0
-    for i in range(1, 4):
-        if verb:
-            print(
-                f"<p>: {i}, <q>: 0, <r>: {i}, <s>: 0, integral: {ints[i, 0, i, 0]:.6f}"
-            )
-        counter += 1
-        sum_s_p += ints[i, 0, i, 0]
-        if ints[i, 0, i, 0] > 1e-7:
-            effective_counter += 1
+    zero_integrals: int = 0
+    for i in s_valence_range:
+        for j in p_valence_range:
+            if verb:
+                print(
+                    f"<p>: {j}, <q>: {i}, <r>: {j}, <s>: {i}, integral: {ints[j, i, j, i]:.6f}"
+                )
+            counter += 1
+            sum_s_p += ints[j, i, j, i]
+            if ints[j, i, j, i] > 1e-7:
+                effective_counter += 1
+            else:
+                zero_integrals += 1
     average_s_p = sum_s_p / counter
     print(f"Average s-p integral: {average_s_p:.6f}")
     print(f"# contributing s-p integrals: {effective_counter}")
@@ -233,8 +282,9 @@ def average_shell_exchange_integrals(ints: np.ndarray, verb: bool) -> np.ndarray
     counter = 0
     sum_p_p: float = 0.0
     effective_counter = 0
-    for i in range(1, 3):
-        for j in range(i + 1, 4):
+    zero_integrals = 0
+    for i in p_valence_range[:-1]:
+        for j in range(i + 1, p_valence_range[-1]):
             if verb:
                 print(
                     f"<p>: {j}, <q>: {i}, <r>: {j}, <s>: {i}, integral: {ints[j, i, j, i]:.6f}"
@@ -243,6 +293,8 @@ def average_shell_exchange_integrals(ints: np.ndarray, verb: bool) -> np.ndarray
             sum_p_p += ints[j, i, j, i]
             if ints[j, i, j, i] > 1e-7:
                 effective_counter += 1
+            else:
+                zero_integrals += 1
     average_p_p = sum_p_p / counter
     print(f"Average p-p' integral: {average_p_p:.6f}")
     print(f"# contributing p-p' integrals: {effective_counter}")
@@ -254,15 +306,19 @@ def average_shell_exchange_integrals(ints: np.ndarray, verb: bool) -> np.ndarray
     counter = 0
     sum_s_d: float = 0.0
     effective_counter = 0
-    for j in range(4, 9):
-        if verb:
-            print(
-                f"<p>: {j}, <q>: 0, <r>: {j}, <s>: 0, integral: {ints[j, 0, j, 0]:.6f}"
-            )
-        counter += 1
-        sum_s_d += ints[j, 0, j, 0]
-        if ints[j, 0, j, 0] > 1e-7:
-            effective_counter += 1
+    zero_integrals = 0
+    for i in s_valence_range:
+        for j in d_valence_range:
+            if verb:
+                print(
+                    f"<p>: {j}, <q>: {i}, <r>: {j}, <s>: {i}, integral: {ints[j, i, j, i]:.6f}"
+                )
+            counter += 1
+            sum_s_d += ints[j, i, j, i]
+            if ints[j, i, j, i] > 1e-7:
+                effective_counter += 1
+            else:
+                zero_integrals += 1
     average_s_d = sum_s_d / counter
     print(f"Average s-d integral: {average_s_d:.6f}")
     print(f"# contributing s-d integrals: {effective_counter}")
@@ -274,8 +330,9 @@ def average_shell_exchange_integrals(ints: np.ndarray, verb: bool) -> np.ndarray
     counter = 0
     sum_p_d: float = 0.0
     effective_counter = 0
-    for i in range(1, 4):
-        for j in range(4, 9):
+    zero_integrals = 0
+    for i in p_valence_range:
+        for j in d_valence_range:
             if verb:
                 print(
                     f"<p>: {j}, <q>: {i}, <r>: {j}, <s>: {i}, integral: {ints[j, i, j, i]:.6f}"
@@ -284,6 +341,8 @@ def average_shell_exchange_integrals(ints: np.ndarray, verb: bool) -> np.ndarray
             sum_p_d += ints[j, i, j, i]
             if ints[j, i, j, i] > 1e-7:
                 effective_counter += 1
+            else:
+                zero_integrals += 1
     average_p_d = sum_p_d / counter
     print(f"Average p-d integral: {average_p_d:.6f}")
     print(f"# contributing p-d integrals: {effective_counter}")
@@ -295,8 +354,9 @@ def average_shell_exchange_integrals(ints: np.ndarray, verb: bool) -> np.ndarray
     counter = 0
     sum_d_d: float = 0.0
     effective_counter = 0
-    for i in range(4, 8):
-        for j in range(i + 1, 9):
+    zero_integrals = 0
+    for i in d_valence_range[:-1]:
+        for j in range(i + 1, d_valence_range[-1]):
             if verb:
                 print(
                     f"<p>: {j}, <q>: {i}, <r>: {j}, <s>: {i}, integral: {ints[j, i, j, i]:.6f}"
@@ -305,8 +365,112 @@ def average_shell_exchange_integrals(ints: np.ndarray, verb: bool) -> np.ndarray
             sum_d_d += ints[j, i, j, i]
             if ints[j, i, j, i] > 1e-7:
                 effective_counter += 1
+            else:
+                zero_integrals += 1
     average_d_d = sum_d_d / counter
     print(f"Average d-d' integral: {average_d_d:.6f}")
     print(f"# contributing d-d' integrals: {effective_counter}")
     msindo_xc_ints[4] = average_d_d
+    if not (57 < ati < 72 or ati > 88):
+        return msindo_xc_ints
+    #################
+    # s-f integrals:
+    #################
+    print("s-f integrals:")
+    counter = 0
+    sum_s_f: float = 0.0
+    effective_counter = 0
+    zero_integrals = 0
+    for i in s_valence_range:
+        for j in f_valence_range:
+            if verb:
+                print(
+                    f"<p>: {j}, <q>: {i}, <r>: {j}, <s>: {i}, integral: {ints[j, i, j, i]:.6f}"
+                )
+            counter += 1
+            sum_s_f += ints[j, i, j, i]
+            if ints[j, i, j, i] > 1e-7:
+                effective_counter += 1
+            else:
+                zero_integrals += 1
+    average_s_f = sum_s_f / counter
+    print(f"Average s-f integral: {average_s_f:.6f}")
+    print(f"# contributing s-f integrals: {effective_counter}")
+    msindo_xc_ints[5] = average_s_f
+    #################
+    # p-f integrals:
+    #################
+    print("p-f integrals:")
+    counter = 0
+    sum_p_f: float = 0.0
+    effective_counter = 0
+    zero_integrals = 0
+    for i in p_valence_range:
+        for j in f_valence_range:
+            if verb:
+                print(
+                    f"<p>: {j}, <q>: {i}, <r>: {j}, <s>: {i}, integral: {ints[j, i, j, i]:.6f}"
+                )
+            counter += 1
+            sum_p_f += ints[j, i, j, i]
+            if ints[j, i, j, i] > 1e-7:
+                effective_counter += 1
+            else:
+                zero_integrals += 1
+    average_p_f = sum_p_f / counter
+    print(f"Average p-f integral: {average_p_f:.6f}")
+    print(f"# contributing p-f integrals: {effective_counter}")
+    msindo_xc_ints[6] = average_p_f
+    #################
+    # d-f integrals:
+    #################
+    print("d-f integrals:")
+    counter = 0
+    sum_d_f: float = 0.0
+    effective_counter = 0
+    zero_integrals = 0
+    for i in d_valence_range:
+        for j in f_valence_range:
+            if verb:
+                print(
+                    f"<p>: {j}, <q>: {i}, <r>: {j}, <s>: {i}, integral: {ints[j, i, j, i]:.6f}"
+                )
+            counter += 1
+            sum_d_f += ints[j, i, j, i]
+            if ints[j, i, j, i] > 1e-7:
+                effective_counter += 1
+            else:
+                zero_integrals += 1
+    average_d_f = sum_d_f / counter
+    print(f"Average d-f integral: {average_d_f:.6f}")
+    print(f"# contributing d-f integrals: {effective_counter}")
+    msindo_xc_ints[7] = average_d_f
+    #################
+    # f-f integrals:
+    #################
+    print("f-f integrals:")
+    counter = 0
+    sum_f_f: float = 0.0
+    effective_counter = 0
+    zero_integrals = 0
+    for i in f_valence_range[:-1]:
+        for j in range(i + 1, f_valence_range[-1]):
+            if verb:
+                print(
+                    f"<p>: {j}, <q>: {i}, <r>: {j}, <s>: {i}, integral: {ints[j, i, j, i]:.6f}"
+                )
+            counter += 1
+            sum_f_f += ints[j, i, j, i]
+            if ints[j, i, j, i] > 1e-7:
+                effective_counter += 1
+            else:
+                zero_integrals += 1
+    average_f_f = sum_f_f / counter
+    print(f"Average f-f integral: {average_f_f:.6f}")
+    print(f"# contributing f-f integrals: {effective_counter}")
+    msindo_xc_ints[8] = average_f_f
+
+    #################
+    # RETURN AVERAGE INTEGRALS PER ATOM
+    #################
     return msindo_xc_ints

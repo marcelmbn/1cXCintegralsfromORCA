@@ -2,8 +2,10 @@
 Module reading element-specific individual charges and CNs from a file.
 """
 
+from pathlib import Path
 
-def read_q_cn(filename, verb) -> dict:
+
+def read_q_cn(filename: Path, verb: bool) -> dict[str, dict[str, float]]:
     """
     Read the element-specific individual charges and CNs from the file.
     The file looks as follows:

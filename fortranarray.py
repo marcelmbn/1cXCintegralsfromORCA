@@ -25,7 +25,10 @@ def write_fortran_data(array, outfile: str) -> None:
     Fortran code for the GP3 method.
     """
     with open(outfile, "w", encoding="utf8") as f:
-        print(f"real(wp), save, dimension(5, {array.shape[1] - 1}) :: gmunu", file=f)
+        print(
+            f"real(wp), save, dimension({array.shape[0]}, {array.shape[1] - 1}) :: gmunu",
+            file=f,
+        )
         for i in range(array.shape[1]):
             if i == 0:
                 continue
@@ -34,8 +37,6 @@ def write_fortran_data(array, outfile: str) -> None:
                 if j == 0:
                     print(f"& {array[j, i]:.7f}_wp, ", end="", file=f)
                 elif j == 8:
-                    print("0.0000000_wp /", file=f)
-                elif j > 4:
-                    print("0.0000000_wp, ", end="", file=f)
+                    print(f"{array[j, i]:.7f}_wp /", file=f)
                 else:
                     print(f"{array[j, i]:.7f}_wp, ", end="", file=f)
