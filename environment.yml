@@ -1,0 +1,12 @@
+# conda env create -f environment.yaml
+name: onecenterxcintegrals
+channels:
+  - conda-forge
+dependencies:
+  # runtime dependencies
+  - python>=3.12
+  - numpy>=2.0.0
+  - seaborn
+  # development dependencies
+  - ruff==0.5.7
+  - mypy
