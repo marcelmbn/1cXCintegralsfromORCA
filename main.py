@@ -12,7 +12,12 @@ import sys
 import argparse
 import subprocess as sp
 import numpy as np
-from inthandler import jsonhandler, modtwoelints
+from inthandler import (
+    jsonhandler_resorting_legacy,
+    jsonhandler_no_resorting,
+    modtwoelints_analytic_average_legacy,
+    average_shell_exchange_integrals,
+)
 from fortranarray import write_fortran_array, write_fortran_data
 from strucIO import xyzwriter
 from q_cn_import import read_q_cn
@@ -125,6 +130,12 @@ parser.add_argument(
 parser.add_argument(
     "-dry", "--dry_run", action="store_true", help="only perform first input generation"
 )
+parser.add_argument(
+    "--legacy",
+    action="store_true",
+    default=False,
+    help="use the legacy version of ORCA_2JSON",
+)
 args = parser.parse_args()
 
 if args.external_charges:
@@ -215,9 +226,8 @@ for i in range(1, 87):
     except sp.CalledProcessError as err:
         print("Error: ", err.stderr)
         raise SystemExit(1) from err
-    else:
-        if args.verbose:
-            print("Output: ", process.stdout)
+    if args.verbose:
+        print("Output: ", process.stdout)
     if args.dry_run:
         sys.exit(0)
 
@@ -248,13 +258,25 @@ for i in range(1, 87):
     f.close()
 
     # Read in the json file
-    twoelints = jsonhandler("hf_q-vSZP.json", pesdict[i].lower(), args.verbose)
+    if args.legacy:
+        twoelints = jsonhandler_resorting_legacy(
+            "hf_q-vSZP.json", pesdict[i].lower(), args.verbose
+        )
+    else:
+        twoelints = jsonhandler_no_resorting(
+            "hf_q-vSZP.json", pesdict[i].lower(), args.verbose
+        )
 
-    if args.verbose:
+    if args.verbose and args.legacy:
         # print the twoelints numpy array
         print(twoelints)
 
-    msindo_xc_ints = modtwoelints(twoelints, i, args.verbose)
+    if args.legacy:
+        msindo_xc_ints = modtwoelints_analytic_average_legacy(
+            twoelints, i, args.verbose
+        )
+    else:
+        msindo_xc_ints = average_shell_exchange_integrals(twoelints, args.verbose)
     # incorporate the msindo xc integrals into the onecenterxcints array for the current element
     # the whole vector of size 5 is copied into the array at the position of the current element
     onecxcints[:, i] = msindo_xc_ints
@@ -265,6 +287,7 @@ for i in range(1, 87):
     except OSError as err:
         print(f"Could not change directory to {os.getcwd()}.")
         raise SystemExit(1) from err
+    # raise SystemExit(1)
 
 if args.verbose:
     # print the onecenterxcints array
